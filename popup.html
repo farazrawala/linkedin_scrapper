@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>My LinkedIn Scrapper</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <h1>My LinkedIn Scrapper <span id="version" class="version"></span></h1>
+    <span id="statusBadge" class="badge">Stopped</span>
+  </header>
+  <p id="scrollInfo" class="scroll-info" hidden></p>
+
+  <section id="skillsSection">
+    <button id="skillsToggle" class="section-toggle" type="button" aria-expanded="true" aria-controls="skillsBody">
+      <span class="arrow" aria-hidden="true">▾</span> Skills <span id="skillsCount" class="section-count"></span>
+    </button>
+    <div id="skillsBody">
+      <div id="chipBox" class="chip-box">
+        <input id="skillInput" type="text" placeholder="Add a skill, press Enter" autocomplete="off" aria-label="Add a skill" />
+      </div>
+      <p class="hint">Used to fill "Matched Skills" for job posts.</p>
+      <button id="cvBtn" class="btn small">📄 Import skills from CV (PDF)</button>
+    </div>
+  </section>
+
+  <section id="smtpSection">
+    <button id="smtpToggle" class="section-toggle" type="button" aria-expanded="false" aria-controls="smtpBody">
+      <span class="arrow" aria-hidden="true">▸</span> Email (SMTP) <span id="smtpState" class="section-count"></span>
+    </button>
+    <form id="smtpBody" class="smtp-form" hidden autocomplete="off">
+      <div class="field-row">
+        <label>Host <input id="smtpHost" type="text" placeholder="smtp.gmail.com" /></label>
+        <label class="port">Port <input id="smtpPort" type="number" min="1" max="65535" placeholder="587" /></label>
+      </div>
+      <label>Security
+        <select id="smtpSecure">
+          <option value="tls">STARTTLS (port 587)</option>
+          <option value="ssl">SSL (port 465)</option>
+        </select>
+      </label>
+      <label>Gmail address <input id="smtpUser" type="email" placeholder="you@gmail.com" /></label>
+      <label>App password
+        <span class="pass-row">
+          <input id="smtpPass" type="password" placeholder="xxxx xxxx xxxx xxxx" autocomplete="new-password" />
+          <button id="smtpShowPass" type="button" class="btn small" title="Show / hide">Show</button>
+        </span>
+      </label>
+      <label>From name <input id="smtpFromName" type="text" placeholder="Your name" /></label>
+      <label>Groq API key <input id="smtpGroqKey" type="password" placeholder="gsk_…" autocomplete="new-password" /></label>
+      <label>Mail relay URL <input id="smtpRelay" type="url" placeholder="http://localhost/…/server/send-mail.php" /></label>
+      <button id="smtpSave" type="submit" class="btn small">Save</button>
+      <span id="smtpMsg" class="hint"></span>
+      <p class="hint">Use a Google App Password (Google Account → Security → App passwords), not your normal password. Saved only in this browser.</p>
+    </form>
+  </section>
+
+  <section class="interval">
+    <label for="scrollMin" class="label">Scroll every</label>
+    <div class="interval-row">
+      <input id="scrollMin" type="number" min="5" max="3600" step="5" aria-label="Minimum seconds" />
+      <span>–</span>
+      <input id="scrollMax" type="number" min="5" max="3600" step="5" aria-label="Maximum seconds" />
+      <span>sec</span>
+    </div>
+    <p class="hint">A random delay in this range is used between scrolls.</p>
+
+    <label for="scrollLimit" id="scrollLimitLabel" class="label limit-label">Number of scrolls</label>
+    <div class="interval-row">
+      <input id="scrollLimit" type="number" min="1" max="1000" step="1" />
+      <span id="scrollLimitUnit">scrolls, then stop</span>
+    </div>
+  </section>
+
+  <section>
+    <button id="toggleBtn" class="btn primary">Start</button>
+    <p id="tabNote" class="hint warn" hidden></p>
+  </section>
+
+  <section class="counters">
+    <div><span class="count" id="scannedCount">0</span><span class="count-label">Posts scanned</span></div>
+    <div><span class="count" id="savedCount">0</span><span class="count-label">Job posts saved</span></div>
+  </section>
+
+  <section class="actions">
+    <button id="openTableBtn" class="btn">Open Table</button>
+    <button id="exportBtn" class="btn">Export CSV</button>
+    <button id="clearBtn" class="btn danger">Clear Data</button>
+  </section>
+
+  <script src="location-dictionary.js"></script>
+  <script src="shared.js"></script>
+  <script src="smtp-settings.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

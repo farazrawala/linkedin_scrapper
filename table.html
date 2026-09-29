@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Saved Job Posts</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: #1d2226;
+      background: #f3f2ef;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    h1 { font-size: 20px; margin: 0 auto 0 0; }
+    #summary { color: #666; }
+    .version { font-size: 12px; font-weight: 400; color: #888; }
+    #search {
+      width: 280px;
+      max-width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #c7c7c7;
+      border-radius: 18px;
+      font: inherit;
+    }
+    #search:focus, #skillFilter:focus, #sortBy:focus { outline: none; border-color: #0a66c2; }
+    #skillFilter, #sortBy { padding: 8px 12px; border: 1px solid #c7c7c7; border-radius: 18px; font: inherit; background: #fff; }
+    .btn {
+      padding: 8px 14px;
+      border: 1px solid #0a66c2;
+      border-radius: 18px;
+      background: #0a66c2;
+      color: #fff;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn:hover { background: #004182; }
+    .wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 0 0 1px #e0dfdc; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid #ebebeb; }
+    th { background: #fafafa; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: #555; white-space: nowrap; }
+    tr:last-child td { border-bottom: 0; }
+    td.num { color: #888; width: 40px; }
+    td.author { width: 180px; font-weight: 600; }
+    td.location { width: 150px; color: #333; }
+    td.text { min-width: 320px; white-space: pre-wrap; word-break: break-word; }
+    td.date { white-space: nowrap; color: #555; width: 160px; }
+    a { color: #0a66c2; }
+    .toggle {
+      border: 0;
+      background: none;
+      color: #0a66c2;
+      cursor: pointer;
+      font: inherit;
+      padding: 0 0 0 4px;
+    }
+    .toggle:hover { text-decoration: underline; }
+    a.post-link { background: #fff4c2; border-radius: 3px; padding: 0 2px; font-weight: 600; word-break: break-all; }
+    a.post-link:hover { background: #ffe680; }
+    .skill { display: inline-block; margin: 0 4px 4px 0; padding: 1px 8px; border-radius: 10px; background: #e1efff; color: #0a4d8f; font-size: 12px; }
+    a.email-btn, button.email-btn {
+      display: block;
+      width: max-content;
+      margin-top: 8px;
+      padding: 3px 10px;
+      border: 1px solid #0a66c2;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    
+    .btn.outline { background: #fff; color: #0a66c2; }
+    .btn.outline:hover { background: #eef5fc; }
+    .btn.outline.set::after { content: " ✓"; color: #057642; }
+
+    /* Email settings dialog */
+    #smtpDialog { width: 420px; max-width: calc(100vw - 32px); padding: 0; border: 0; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+    #smtpDialog::backdrop { background: rgba(0,0,0,.35); }
+    .dlg-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #ebebeb; }
+    .dlg-head h2 { font-size: 16px; margin: 0; }
+    .dlg-close { border: 0; background: none; font-size: 22px; line-height: 1; color: #666; cursor: pointer; }
+    .dlg-close:hover { color: #b24020; }
+    .smtp-form { padding: 16px 18px 18px; }
+    .smtp-form label { display: block; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: #444; }
+    .smtp-form input, .smtp-form select {
+      display: block; width: 100%; margin-top: 4px; padding: 7px 10px;
+      border: 1px solid #c7c7c7; border-radius: 6px; font: inherit; font-weight: 400; background: #fff;
+    }
+    .smtp-form input:focus, .smtp-form select:focus { outline: none; border-color: #0a66c2; }
+    .field-row { display: flex; gap: 10px; }
+    .field-row label { flex: 1; }
+    .field-row label.port { flex: 0 0 100px; }
+    .pass-row { display: flex; gap: 8px; align-items: center; }
+    .pass-row input { flex: 1; }
+    .pass-row .btn { margin-top: 4px; padding: 6px 12px; }
+    .dlg-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+    #smtpMsg { color: #057642; font-weight: 600; }
+    .smtp-form .hint { margin: 12px 0 0; color: #666; font-size: 12px; }
+    /* Compose dialog */
+    #composeDialog { width: 640px; max-width: calc(100vw - 32px); padding: 0; border: 0; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+    #composeDialog::backdrop { background: rgba(0,0,0,.35); }
+    .compose-form { padding: 16px 18px 18px; }
+    .compose-form label { display: block; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: #444; }
+    .compose-form input[type="email"], .compose-form input[type="text"], .compose-form textarea {
+      display: block; width: 100%; margin-top: 4px; padding: 7px 10px;
+      border: 1px solid #c7c7c7; border-radius: 6px; font: inherit; font-weight: 400; background: #fff;
+    }
+    .compose-form textarea { min-height: 260px; resize: vertical; line-height: 1.5; }
+    .compose-form input:focus, .compose-form textarea:focus { outline: none; border-color: #0a66c2; }
+    .compose-form :disabled { background: #f6f6f6; }
+    .attach-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; }
+    .attach-row label { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-weight: 400; }
+    .attach-row .file-pick { color: #0a66c2; cursor: pointer; text-decoration: underline; margin-left: auto; }
+    .attach-row .file-pick input { display: none; }
+    .compose-status { min-height: 20px; margin: 0 0 12px; font-size: 13px; color: #555; }
+    .compose-status.ok { color: #057642; font-weight: 600; }
+    .compose-status.warn { color: #915907; }
+    .compose-status.error { color: #b24020; font-weight: 600; }
+    .compose-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .btn:disabled { opacity: .6; cursor: default; }
+    a.email-btn.sent, button.email-btn.sent { border-color: #057642; color: #057642; }
+    button.email-btn { background: #fff; color: #0a66c2; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+    button.email-btn:hover { background: #0a66c2; color: #fff; }
+    button.email-btn.sent:hover { background: #057642; color: #fff; }
+    #empty { padding: 32px; text-align: center; color: #666; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Saved Job Posts <span id="version" class="version"></span></h1>
+    <button id="smtpBtn" class="btn outline" type="button" title="Email (SMTP) settings">✉ Email settings</button>
+    <span id="summary"></span>
+    <input id="search" type="search" placeholder="Search posts…" autocomplete="off" />
+    <select id="skillFilter" title="Filter by matched skill"></select>
+    <select id="sortBy" title="Sort posts">
+      <option value="scraped-desc">Newest scraped</option>
+      <option value="scraped-asc">Oldest scraped</option>
+      <option value="posted-desc">Newest posted</option>
+      <option value="posted-asc">Oldest posted</option>
+      <option value="author-asc">Author A–Z</option>
+    </select>
+    <button id="exportBtn" class="btn">Export CSV</button>
+  </header>
+
+  <div class="wrap">
+    <table>
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="empty" hidden>No job posts saved yet.</div>
+  </div>
+
+  <dialog id="smtpDialog" aria-labelledby="smtpTitle">
+    <div class="dlg-head">
+      <h2 id="smtpTitle">Email settings (SMTP)</h2>
+      <button id="smtpClose" class="dlg-close" type="button" aria-label="Close">×</button>
+    </div>
+    <form id="smtpBody" class="smtp-form" autocomplete="off">
+      <div class="field-row">
+        <label>Host <input id="smtpHost" type="text" placeholder="smtp.gmail.com" /></label>
+        <label class="port">Port <input id="smtpPort" type="number" min="1" max="65535" placeholder="587" /></label>
+      </div>
+      <label>Security
+        <select id="smtpSecure">
+          <option value="tls">STARTTLS (port 587)</option>
+          <option value="ssl">SSL (port 465)</option>
+        </select>
+      </label>
+      <label>Gmail address <input id="smtpUser" type="email" placeholder="you@gmail.com" /></label>
+      <label>App password
+        <span class="pass-row">
+          <input id="smtpPass" type="password" placeholder="xxxx xxxx xxxx xxxx" autocomplete="new-password" />
+          <button id="smtpShowPass" type="button" class="btn outline">Show</button>
+        </span>
+      </label>
+      <label>From name <input id="smtpFromName" type="text" placeholder="Your name" /></label>
+      <label>Groq API key <input id="smtpGroqKey" type="password" placeholder="gsk_…" autocomplete="new-password" /></label>
+      <label>Mail relay URL <input id="smtpRelay" type="url" placeholder="http://localhost/…/server/send-mail.php" /></label>
+      <div class="dlg-actions">
+        <button id="smtpSave" type="submit" class="btn">Save</button>
+        <span id="smtpMsg"></span>
+      </div>
+      <p class="hint">Use a Google App Password (Google Account → Security → App passwords), not your normal password. Saved only in this browser.</p>
+    </form>
+  </dialog>
+
+  <dialog id="composeDialog" aria-labelledby="composeTitle">
+    <div class="dlg-head">
+      <h2 id="composeTitle">Email</h2>
+      <button id="composeClose" class="dlg-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div class="compose-form">
+      <label>To <input id="composeTo" type="email" /></label>
+      <label>Subject <input id="composeSubject" type="text" /></label>
+      <label>Message <textarea id="composeBody" spellcheck="true"></textarea></label>
+      <div class="attach-row">
+        <label><input id="composeAttach" type="checkbox" /> 📎 <span id="composeAttachName"></span></label>
+        <label class="file-pick"><span id="composeFilePick">Choose PDF</span><input id="composeFile" type="file" accept="application/pdf,.pdf" /></label>
+      </div>
+      <p id="composeStatus" class="compose-status"></p>
+      <div class="compose-actions">
+        <button id="composeCancel" class="btn outline" type="button">Cancel</button>
+        <button id="composeRegen" class="btn outline" type="button">↻ Regenerate</button>
+        <button id="composeSend" class="btn" type="button">Send</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="location-dictionary.js"></script>
+  <script src="shared.js"></script>
+  <script src="smtp-settings.js"></script>
+  <script src="compose.js"></script>
+  <script src="table.js"></script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+* { box-sizing: border-box; }
+
+body {
+  width: 320px;
+  margin: 0;
+  padding: 14px;
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #1d2226;
+  background: #fff;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+h1 { font-size: 16px; margin: 0; }
+.version { font-size: 11px; font-weight: 400; color: #888; }
+
+section { margin-bottom: 14px; }
+
+.scroll-info {
+  margin: -4px 0 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #eef5fc;
+  color: #0a4d8f;
+  font-weight: 600;
+}
+.scroll-info.warn { background: #fcefeb; color: #b24020; }
+
+.section-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.section-toggle .arrow { display: inline-block; width: 12px; color: #666; }
+.section-toggle:hover .arrow { color: #0a66c2; }
+.section-count { font-weight: 400; color: #888; }
+#skillsBody[hidden] { display: none; }
+
+.label { display: block; font-weight: 600; margin-bottom: 6px; }
+
+.hint { margin: 4px 0 0; color: #666; font-size: 11px; }
+.hint.warn { color: #b24020; }
+
+.badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #e8e8e8;
+  color: #555;
+}
+.badge.running { background: #d7f5dd; color: #057642; }
+
+/* Chip input */
+.chip-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #c7c7c7;
+  border-radius: 6px;
+  cursor: text;
+}
+.chip-box:focus-within { border-color: #0a66c2; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 8px;
+  border-radius: 12px;
+  background: #e1efff;
+  color: #0a4d8f;
+  font-size: 12px;
+}
+.chip button {
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 4px;
+}
+.chip button:hover { color: #b24020; }
+
+#skillInput {
+  flex: 1;
+  min-width: 100px;
+  border: 0;
+  outline: 0;
+  font: inherit;
+  padding: 2px;
+}
+
+/* Scroll interval */
+.interval-row { display: flex; align-items: center; gap: 6px; }
+.interval-row input {
+  width: 70px;
+  padding: 4px 6px;
+  border: 1px solid #c7c7c7;
+  border-radius: 6px;
+  font: inherit;
+}
+.interval-row input:focus { outline: 0; border-color: #0a66c2; }
+.limit-label { margin-top: 10px; }
+/* While running the scroll count is a read-only countdown. */
+.interval-row input[readonly] { background: #f3f2ef; color: #0a4d8f; font-weight: 700; cursor: default; }
+
+/* Buttons */
+.btn {
+  padding: 7px 12px;
+  border: 1px solid #0a66c2;
+  border-radius: 16px;
+  background: #fff;
+  color: #0a66c2;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn:hover { background: #eef5fc; }
+.btn.primary { width: 100%; background: #0a66c2; color: #fff; }
+.btn.primary:hover { background: #004182; }
+.btn.primary.stop { background: #b24020; border-color: #b24020; }
+.btn.danger { border-color: #b24020; color: #b24020; }
+.btn.small { margin-top: 8px; padding: 5px 10px; font-size: 12px; }
+.btn.danger:hover { background: #fcefeb; }
+
+.counters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.counters > div {
+  padding: 8px;
+  border-radius: 6px;
+  background: #f3f2ef;
+  text-align: center;
+}
+.count { display: block; font-size: 20px; font-weight: 700; }
+.count-label { font-size: 11px; color: #666; }
+
+.actions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0; }
+.actions .btn { flex: 1; padding: 6px 8px; font-size: 12px; }
+
+/* SMTP settings */
+#smtpBody[hidden] { display: none; }
+.smtp-form label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 600; color: #444; }
+.smtp-form input, .smtp-form select {
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+  padding: 5px 7px;
+  border: 1px solid #c7c7c7;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 400;
+  background: #fff;
+}
+.smtp-form input:focus, .smtp-form select:focus { outline: 0; border-color: #0a66c2; }
+.field-row { display: flex; gap: 8px; }
+.field-row label { flex: 1; }
+.field-row label.port { flex: 0 0 80px; }
+.pass-row { display: flex; gap: 6px; align-items: center; }
+.pass-row input { flex: 1; }
+.pass-row .btn.small { margin-top: 3px; }
+#smtpMsg { margin-left: 8px; color: #057642; }

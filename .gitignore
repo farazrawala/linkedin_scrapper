@@ -1,0 +1,39 @@
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Packaged extension builds
+*.zip
+*.crx
+*.pem
+dist/
+build/
+
+# Dependencies (if added later)
+node_modules/
+server/vendor/
+
+# Logs and temp files
+*.log
+logs/
+tmp/
+*.tmp
+
+# Local secrets / config
+.env
+.env.*
+server/config.local.php
+
+# Exported scrape data
+*.csv
+*.xlsx
