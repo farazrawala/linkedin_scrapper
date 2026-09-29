@@ -1,5 +1,6 @@
 /**
- * My LinkedIn Scrapper — content script (runs on https://www.linkedin.com/feed/*).
+ * My LinkedIn Scrapper — content script (runs on https://www.linkedin.com/feed/* and
+ * the post search results at https://www.linkedin.com/search/results/content/*).
  *
  * While "running":
  *  - scans every post on the feed, expands "…see more", reads the full text
@@ -74,6 +75,10 @@
         "a.feed-shared-actor__container-link",
       ],
     },
+
+    // Lowercase phrases that mark a post as NOT a job post (checked first).
+    // "Open to Work" posts are job seekers announcing themselves, not openings.
+    EXCLUDE_KEYWORDS: ["open to work", "#opentowork", "opentowork"],
 
     // Lowercase keywords that mark a post as a job post.
     JOB_KEYWORDS: [
@@ -158,7 +163,8 @@
     }
   };
 
-  const isFeedPage = () => location.pathname.startsWith("/feed");
+  /** Pages the scraper works on: the feed and post search results. */
+  const isFeedPage = () => /^\/(feed|search\/results\/content)(\/|$)/.test(location.pathname);
 
   // ---------------------------------------------------------------------------
   // Job detection — async so it can later be replaced by an AI API call.
@@ -170,6 +176,8 @@
   async function isJobPost(text) {
     // Normalise curly apostrophes so "we’re hiring" matches "we're hiring".
     const lower = String(text || "").toLowerCase().replace(/[‘’]/g, "'");
+    const excluded = CONFIG.EXCLUDE_KEYWORDS.find((kw) => lower.includes(kw));
+    if (excluded) return { isJob: false, reason: `Excluded keyword: ${excluded}` };
     const matched = CONFIG.JOB_KEYWORDS.filter((kw) => lower.includes(kw));
     if (matched.length) {
       return { isJob: true, reason: `Matched keywords: ${matched.join(", ")}` };

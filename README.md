@@ -10,7 +10,7 @@ Job posts are matched against your skills, which are shown in the table and the 
 2. Turn on **Developer mode** (top right).
 3. Click **Load unpacked** and select this folder (the one with `manifest.json`).
 4. Pin **My LinkedIn Scrapper** from the puzzle-piece menu (optional).
-5. Open (or reload) `https://www.linkedin.com/feed/` while logged in.
+5. Open (or reload) `https://www.linkedin.com/feed/` while logged in. Post search results (`https://www.linkedin.com/search/results/content/?keywords=…`) work too.
 
 > If the feed tab was already open before you loaded or reloaded the extension, reload the tab so the content script attaches.
 

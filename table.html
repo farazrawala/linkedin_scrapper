@@ -5,160 +5,462 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Saved Job Posts</title>
   <style>
+    :root {
+      --primary: #0a66c2;
+      --primary-hover: #004182;
+      --primary-soft: #eaf3fc;
+      --text: #111827;
+      --text-2: #374151;
+      --muted: #6b7280;
+      --faint: #9ca3af;
+      --border: #e5e7eb;
+      --border-strong: #d1d5db;
+      --bg: #f5f6f8;
+      --surface: #fff;
+      --row-hover: #f8fafc;
+      --head-bg: #f9fafb;
+      --success: #057642;
+      --danger: #b24020;
+      --radius-sm: 8px;
+      --radius: 10px;
+      --radius-lg: 12px;
+      --shadow: 0 1px 2px rgba(16, 24, 40, .05);
+      --shadow-md: 0 1px 3px rgba(16, 24, 40, .08), 0 1px 2px rgba(16, 24, 40, .04);
+      --ring: 0 0 0 3px rgba(10, 102, 194, .2);
+      --control-h: 38px;
+      --ease: .15s ease;
+    }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       padding: 24px;
-      font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      color: #1d2226;
-      background: #f3f2ef;
+      font: 14px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
     }
-    header {
+    .page { max-width: 1600px; margin: 0 auto; }
+    a { color: var(--primary); }
+    :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+
+    /* ---------- Header ---------- */
+    .topbar {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 12px;
+      justify-content: space-between;
+      gap: 12px 16px;
       margin-bottom: 16px;
     }
-    h1 { font-size: 20px; margin: 0 auto 0 0; }
-    #summary { color: #666; }
-    .version { font-size: 12px; font-weight: 400; color: #888; }
-    #search {
-      width: 280px;
-      max-width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #c7c7c7;
-      border-radius: 18px;
-      font: inherit;
+    .title-group { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-width: 0; }
+    h1 { font-size: 22px; line-height: 1.2; font-weight: 700; letter-spacing: -.01em; margin: 0; }
+    .version {
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
     }
-    #search:focus, #skillFilter:focus, #sortBy:focus { outline: none; border-color: #0a66c2; }
-    #skillFilter, #sortBy { padding: 8px 12px; border: 1px solid #c7c7c7; border-radius: 18px; font: inherit; background: #fff; }
+    .version:empty { display: none; }
+    .count-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: #0a4d8f;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .count-badge:empty { display: none; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    /* ---------- Buttons ---------- */
     .btn {
-      padding: 8px 14px;
-      border: 1px solid #0a66c2;
-      border-radius: 18px;
-      background: #0a66c2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: var(--control-h);
+      padding: 0 16px;
+      border: 1px solid var(--primary);
+      border-radius: var(--radius-sm);
+      background: var(--primary);
       color: #fff;
       font: inherit;
       font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: background var(--ease), border-color var(--ease), color var(--ease), box-shadow var(--ease);
+    }
+    .btn:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+    .btn:disabled { opacity: .6; cursor: default; }
+    .btn.outline { background: var(--surface); color: var(--text-2); border-color: var(--border-strong); }
+    .btn.outline:hover { background: var(--head-bg); border-color: var(--faint); color: var(--text); }
+    .btn .icon { width: 16px; height: 16px; flex: none; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
+    #smtpBtn.set .status-dot { background: #12a150; box-shadow: 0 0 0 3px rgba(18, 161, 80, .15); }
+
+    /* ---------- Filters ---------- */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+    }
+    .search-field { position: relative; flex: 1 1 280px; min-width: 200px; }
+    .search-field .icon {
+      position: absolute; left: 12px; top: 50%;
+      width: 16px; height: 16px; margin-top: -8px;
+      color: var(--faint); pointer-events: none;
+    }
+    #search, #skillFilter, #sortBy {
+      height: var(--control-h);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      background-color: var(--surface);
+      color: var(--text);
+      font: inherit;
+      transition: border-color var(--ease), box-shadow var(--ease);
+    }
+    #search { width: 100%; padding: 0 12px 0 36px; }
+    #search::placeholder { color: var(--faint); }
+    #skillFilter, #sortBy {
+      flex: 0 1 220px;
+      min-width: 160px;
+      padding: 0 34px 0 12px;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
       cursor: pointer;
     }
-    .btn:hover { background: #004182; }
-    .wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 0 0 1px #e0dfdc; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid #ebebeb; }
-    th { background: #fafafa; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: #555; white-space: nowrap; }
-    tr:last-child td { border-bottom: 0; }
-    td.num { color: #888; width: 40px; }
-    td.author { width: 180px; font-weight: 600; }
-    td.location { width: 150px; color: #333; }
-    td.text { min-width: 320px; white-space: pre-wrap; word-break: break-word; }
-    td.date { white-space: nowrap; color: #555; width: 160px; }
-    a { color: #0a66c2; }
+    #search:hover, #skillFilter:hover, #sortBy:hover { border-color: var(--faint); }
+    #search:focus, #skillFilter:focus, #sortBy:focus { outline: none; border-color: var(--primary); box-shadow: var(--ring); }
+    #skillFilter[hidden] { display: none; }
+
+    /* ---------- Table ---------- */
+    .wrap {
+      overflow-x: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    th, td { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+    th {
+      background: var(--head-bg);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    tbody tr { transition: background var(--ease); }
+    tbody tr:hover { background: var(--row-hover); }
+    tbody tr:last-child td { border-bottom: 0; }
+    .muted { color: var(--faint); }
+
+    td.num { width: 44px; color: var(--faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+    td.author { width: 180px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+    td.author a { color: var(--text); text-decoration: none; transition: color var(--ease); }
+    td.author a:hover { color: var(--primary); text-decoration: underline; }
+    td.location { width: 170px; color: var(--muted); font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+    td.location.muted { color: var(--faint); }
+
+    td.text { min-width: 340px; max-width: 640px; color: var(--text-2); overflow-wrap: anywhere; }
+    .post-title { margin-bottom: 4px; font-weight: 600; color: var(--text); line-height: 1.4; }
+    .post-body { white-space: pre-wrap; line-height: 1.55; }
     .toggle {
+      margin-left: 4px;
+      padding: 0;
       border: 0;
       background: none;
-      color: #0a66c2;
-      cursor: pointer;
+      color: var(--muted);
       font: inherit;
-      padding: 0 0 0 4px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color var(--ease);
     }
-    .toggle:hover { text-decoration: underline; }
-    a.post-link { background: #fff4c2; border-radius: 3px; padding: 0 2px; font-weight: 600; word-break: break-all; }
-    a.post-link:hover { background: #ffe680; }
-    .skill { display: inline-block; margin: 0 4px 4px 0; padding: 1px 8px; border-radius: 10px; background: #e1efff; color: #0a4d8f; font-size: 12px; }
-    a.email-btn, button.email-btn {
-      display: block;
-      width: max-content;
-      margin-top: 8px;
-      padding: 3px 10px;
-      border: 1px solid #0a66c2;
-      border-radius: 14px;
+    .toggle:hover { color: var(--primary); text-decoration: underline; }
+    a.post-link { color: var(--primary); font-weight: 500; word-break: break-all; text-decoration: none; border-bottom: 1px solid rgba(10, 102, 194, .3); }
+    a.post-link:hover { border-bottom-color: var(--primary); }
+
+    td.skills { width: 220px; }
+    .skill-list { display: flex; flex-wrap: wrap; gap: 4px; }
+    .skill {
+      display: inline-block;
+      padding: 2px 8px;
+      border: 1px solid #d3e5f8;
+      border-radius: 6px;
+      background: #f1f7fd;
+      color: #0a4d8f;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.5;
+      white-space: nowrap;
+    }
+
+    td.links { width: 150px; }
+    .link-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+    a.act {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       font-size: 13px;
       font-weight: 600;
       text-decoration: none;
       white-space: nowrap;
+      transition: color var(--ease);
     }
-    
-    .btn.outline { background: #fff; color: #0a66c2; }
-    .btn.outline:hover { background: #eef5fc; }
-    .btn.outline.set::after { content: " ✓"; color: #057642; }
+    a.act::before {
+      content: "";
+      width: 14px;
+      height: 14px;
+      flex: none;
+      background: currentColor;
+      -webkit-mask: var(--i) no-repeat center / contain;
+      mask: var(--i) no-repeat center / contain;
+    }
+    a.act:hover { text-decoration: underline; }
+    a.act-primary { color: var(--primary); --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3C/svg%3E"); }
+    a.act-primary:hover { color: var(--primary-hover); }
+    a.act-secondary { color: var(--muted); font-weight: 500; --i: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21a8 8 0 0 1 16 0'/%3E%3C/svg%3E"); }
+    a.act-secondary:hover { color: var(--text); }
 
-    /* Email settings dialog */
-    #smtpDialog { width: 420px; max-width: calc(100vw - 32px); padding: 0; border: 0; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
-    #smtpDialog::backdrop { background: rgba(0,0,0,.35); }
-    .dlg-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #ebebeb; }
-    .dlg-head h2 { font-size: 16px; margin: 0; }
-    .dlg-close { border: 0; background: none; font-size: 22px; line-height: 1; color: #666; cursor: pointer; }
-    .dlg-close:hover { color: #b24020; }
-    .smtp-form { padding: 16px 18px 18px; }
-    .smtp-form label { display: block; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: #444; }
-    .smtp-form input, .smtp-form select {
-      display: block; width: 100%; margin-top: 4px; padding: 7px 10px;
-      border: 1px solid #c7c7c7; border-radius: 6px; font: inherit; font-weight: 400; background: #fff;
+    td.date {
+      width: 170px;
+      padding-left: 34px;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      background-repeat: no-repeat;
+      background-position: 14px 15px;
+      background-size: 14px 14px;
     }
-    .smtp-form input:focus, .smtp-form select:focus { outline: none; border-color: #0a66c2; }
+    td.date.posted { width: 130px; color: var(--text-2); font-weight: 500; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E"); }
+    td.date.scraped { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M16 3v4M8 3v4M3 11h18'/%3E%3C/svg%3E"); }
+    td.date.muted { color: var(--faint); font-weight: 400; }
+
+    /* Email buttons in the link column */
+    a.email-btn, button.email-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      width: max-content;
+      margin-top: 2px;
+      padding: 3px 10px;
+      border: 1px solid var(--border-strong);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--primary);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background var(--ease), border-color var(--ease), color var(--ease);
+    }
+    button.email-btn:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
+    a.email-btn.sent, button.email-btn.sent { border-color: #b7e0c8; background: #f0faf4; color: var(--success); }
+    button.email-btn.sent:hover { background: var(--success); border-color: var(--success); color: #fff; }
+
+    #empty { padding: 48px 24px; text-align: center; color: var(--muted); }
+    #empty::before {
+      content: "";
+      display: block;
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 12px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='7' width='18' height='13' rx='2'/%3E%3Cpath d='M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18'/%3E%3C/svg%3E") no-repeat center / contain;
+    }
+
+    /* ---------- Dialogs ---------- */
+    #smtpDialog, #composeDialog {
+      max-width: calc(100vw - 32px);
+      padding: 0;
+      border: 0;
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 50px rgba(16, 24, 40, .25);
+      color: var(--text);
+    }
+    #smtpDialog { width: 440px; }
+    #composeDialog { width: 640px; }
+    #smtpDialog::backdrop, #composeDialog::backdrop { background: rgba(17, 24, 39, .45); }
+    .dlg-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+    .dlg-head h2 { font-size: 16px; font-weight: 700; margin: 0; }
+    .dlg-close {
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: none;
+      font-size: 22px;
+      line-height: 1;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background var(--ease), color var(--ease);
+    }
+    .dlg-close:hover { background: var(--head-bg); color: var(--danger); }
+    .smtp-form, .compose-form { padding: 16px 20px 20px; }
+    .smtp-form label, .compose-form label { display: block; margin-bottom: 12px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+    .smtp-form input, .smtp-form select,
+    .compose-form input[type="email"], .compose-form input[type="text"], .compose-form textarea {
+      display: block;
+      width: 100%;
+      margin-top: 6px;
+      padding: 8px 10px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      font: inherit;
+      font-weight: 400;
+      color: var(--text);
+      background: var(--surface);
+      transition: border-color var(--ease), box-shadow var(--ease);
+    }
+    .smtp-form input:focus, .smtp-form select:focus,
+    .compose-form input:focus, .compose-form textarea:focus { outline: none; border-color: var(--primary); box-shadow: var(--ring); }
     .field-row { display: flex; gap: 10px; }
     .field-row label { flex: 1; }
     .field-row label.port { flex: 0 0 100px; }
     .pass-row { display: flex; gap: 8px; align-items: center; }
     .pass-row input { flex: 1; }
-    .pass-row .btn { margin-top: 4px; padding: 6px 12px; }
+    .pass-row .btn { margin-top: 6px; height: 36px; padding: 0 12px; }
     .dlg-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
-    #smtpMsg { color: #057642; font-weight: 600; }
-    .smtp-form .hint { margin: 12px 0 0; color: #666; font-size: 12px; }
-    /* Compose dialog */
-    #composeDialog { width: 640px; max-width: calc(100vw - 32px); padding: 0; border: 0; border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
-    #composeDialog::backdrop { background: rgba(0,0,0,.35); }
-    .compose-form { padding: 16px 18px 18px; }
-    .compose-form label { display: block; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: #444; }
-    .compose-form input[type="email"], .compose-form input[type="text"], .compose-form textarea {
-      display: block; width: 100%; margin-top: 4px; padding: 7px 10px;
-      border: 1px solid #c7c7c7; border-radius: 6px; font: inherit; font-weight: 400; background: #fff;
-    }
+    #smtpMsg { color: var(--success); font-weight: 600; }
+    .smtp-form .hint { margin: 12px 0 0; color: var(--muted); font-size: 12px; }
     .compose-form textarea { min-height: 260px; resize: vertical; line-height: 1.5; }
-    .compose-form input:focus, .compose-form textarea:focus { outline: none; border-color: #0a66c2; }
     .compose-form :disabled { background: #f6f6f6; }
     .attach-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 13px; }
     .attach-row label { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-weight: 400; }
-    .attach-row .file-pick { color: #0a66c2; cursor: pointer; text-decoration: underline; margin-left: auto; }
+    .attach-row .file-pick { color: var(--primary); cursor: pointer; text-decoration: underline; margin-left: auto; }
     .attach-row .file-pick input { display: none; }
-    .compose-status { min-height: 20px; margin: 0 0 12px; font-size: 13px; color: #555; }
-    .compose-status.ok { color: #057642; font-weight: 600; }
+    .compose-status { min-height: 20px; margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+    .compose-status.ok { color: var(--success); font-weight: 600; }
     .compose-status.warn { color: #915907; }
-    .compose-status.error { color: #b24020; font-weight: 600; }
-    .compose-actions { display: flex; gap: 8px; justify-content: flex-end; }
-    .btn:disabled { opacity: .6; cursor: default; }
-    a.email-btn.sent, button.email-btn.sent { border-color: #057642; color: #057642; }
-    button.email-btn { background: #fff; color: #0a66c2; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
-    button.email-btn:hover { background: #0a66c2; color: #fff; }
-    button.email-btn.sent:hover { background: #057642; color: #fff; }
-    #empty { padding: 32px; text-align: center; color: #666; }
+    .compose-status.error { color: var(--danger); font-weight: 600; }
+    .compose-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+
+    /* ---------- Responsive ---------- */
+    /* Wide screens: the table grows with the page, so the column header can stick. */
+    @media (min-width: 1280px) {
+      .wrap { overflow: visible; }
+      th { position: sticky; top: 0; z-index: 1; }
+      th:first-child { border-top-left-radius: var(--radius-lg); }
+      th:last-child { border-top-right-radius: var(--radius-lg); }
+    }
+    /* Tablet: tighter spacing; the table scrolls sideways instead of squashing columns. */
+    @media (max-width: 1279px) {
+      body { padding: 16px; }
+      table { min-width: 1100px; }
+      th, td { padding: 10px 12px; }
+      td.date { padding-left: 32px; background-position: 12px 13px; }
+      td.text { min-width: 300px; }
+    }
+    /* Phone: each post becomes a card. */
+    @media (max-width: 760px) {
+      body { padding: 12px; }
+      h1 { font-size: 20px; }
+      .actions { width: 100%; }
+      .actions .btn { flex: 1; }
+      .toolbar { padding: 10px; }
+      .search-field, #skillFilter, #sortBy { flex: 1 1 100%; }
+      .wrap { overflow: visible; background: none; border: 0; box-shadow: none; }
+      table, tbody, tr, td, td.text { display: block; width: auto; min-width: 0; max-width: none; }
+      thead { display: none; }
+      tbody tr {
+        position: relative;
+        margin-bottom: 10px;
+        padding: 14px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow);
+      }
+      tbody tr:hover { background: var(--surface); }
+      td { padding: 6px 0; border: 0; }
+      td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 2px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: var(--faint);
+      }
+      td.num { position: absolute; top: 14px; right: 14px; padding: 0; }
+      td.num::before, td.author::before, td.text::before { display: none; }
+      td.author { padding-right: 40px; font-size: 15px; }
+      td.date, td.date.posted, td.date.scraped { display: inline-block; width: 50%; padding: 6px 0; background-image: none; vertical-align: top; }
+      .link-actions { flex-direction: row; flex-wrap: wrap; gap: 8px 16px; }
+      #empty { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before { transition: none !important; scroll-behavior: auto !important; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Saved Job Posts <span id="version" class="version"></span></h1>
-    <button id="smtpBtn" class="btn outline" type="button" title="Email (SMTP) settings">✉ Email settings</button>
-    <span id="summary"></span>
-    <input id="search" type="search" placeholder="Search posts…" autocomplete="off" />
-    <select id="skillFilter" title="Filter by matched skill"></select>
-    <select id="sortBy" title="Sort posts">
-      <option value="scraped-desc">Newest scraped</option>
-      <option value="scraped-asc">Oldest scraped</option>
-      <option value="posted-desc">Newest posted</option>
-      <option value="posted-asc">Oldest posted</option>
-      <option value="author-asc">Author A–Z</option>
-    </select>
-    <button id="exportBtn" class="btn">Export CSV</button>
-  </header>
-
-  <div class="wrap">
-    <table>
-      <thead id="thead"></thead>
-      <tbody id="tbody"></tbody>
-    </table>
-    <div id="empty" hidden>No job posts saved yet.</div>
+  <div class="page">
+    <header class="topbar">
+      <div class="title-group">
+        <h1>Saved Job Posts</h1>
+        <span id="version" class="version"></span>
+        <span id="summary" class="count-badge" aria-live="polite"></span>
+      </div>
+      <div class="actions">
+        <button id="smtpBtn" class="btn outline" type="button" title="Email (SMTP) settings">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+          Email settings
+          <span class="status-dot" aria-hidden="true"></span>
+        </button>
+        <button id="exportBtn" class="btn" type="button">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+          Export CSV
+        </button>
+      </div>
+    </header>
+  
+    <div class="toolbar" role="search">
+      <label class="search-field">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="search" type="search" placeholder="Search posts, authors, locations…" autocomplete="off" aria-label="Search posts" />
+      </label>
+      <select id="skillFilter" title="Filter by matched skill" aria-label="Filter by matched skill"></select>
+      <select id="sortBy" title="Sort posts" aria-label="Sort posts">
+        <option value="scraped-desc">Newest scraped</option>
+        <option value="scraped-asc">Oldest scraped</option>
+        <option value="posted-desc">Newest posted</option>
+        <option value="posted-asc">Oldest posted</option>
+        <option value="author-asc">Author A–Z</option>
+      </select>
+    </div>
+  
+    <div class="wrap">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="empty" hidden>No job posts saved yet.</div>
+    </div>
   </div>
 
   <dialog id="smtpDialog" aria-labelledby="smtpTitle">

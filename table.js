@@ -63,9 +63,13 @@ function renderSkillFilter() {
   els.skillFilter.hidden = !SHOW_MATCHED_SKILLS;
 }
 
+// Column labels, also shown above each value in the narrow-screen card layout.
+let columns = [];
+
 function renderHeader() {
   const cols = ["#", "Author", "Location", "Post Text", "Link", "Posted At", "Scraped At"];
   if (SHOW_MATCHED_SKILLS) cols.splice(4, 0, "Matched Skills");
+  columns = cols;
   const tr = document.createElement("tr");
   for (const c of cols) {
     const th = document.createElement("th");
@@ -102,11 +106,29 @@ function truncateIndex(text) {
   return TRUNCATE_AT;
 }
 
-/** Post text cell with a "show more / show less" toggle for long text. */
-function textCell(text) {
+const TITLE_MAX = 160;
+
+/** Split off the first line as a title when it's short and more text follows. */
+function splitTitle(text) {
+  const trimmed = text.trim();
+  const nl = trimmed.indexOf("\n");
+  if (nl < 0 || nl > TITLE_MAX) return { title: "", body: trimmed };
+  return { title: trimmed.slice(0, nl).trim(), body: trimmed.slice(nl + 1).replace(/^\s*\n/, "") };
+}
+
+/** Post text cell: a title line, then the body with a "show more / show less" toggle for long text. */
+function textCell(fullText) {
   const td = document.createElement("td");
   td.className = "text";
+  const { title, body: text } = splitTitle(fullText);
+  if (title) {
+    const h = document.createElement("div");
+    h.className = "post-title";
+    setLinkedText(h, title);
+    td.appendChild(h);
+  }
   const span = document.createElement("span");
+  span.className = "post-body";
   td.appendChild(span);
 
   if (text.length <= TRUNCATE_AT) {
@@ -196,23 +218,38 @@ function renderRows() {
     author.appendChild(job.authorUrl ? link(job.authorUrl, name) : document.createTextNode(name));
 
     const linkTd = document.createElement("td");
+    linkTd.className = "links";
+    const actions = document.createElement("div");
+    actions.className = "link-actions";
+    linkTd.appendChild(actions);
+    const actionLink = (href, label, kind) => {
+      const a = link(href, label);
+      a.className = `act act-${kind}`;
+      return a;
+    };
     // linkIsExact === false: LinkedIn didn't expose the post URL, so this is the author's posts page.
-    const linkLabel = job.linkIsExact === false ? "Author's posts" : "Open post";
-    linkTd.appendChild(job.link ? link(job.link, linkLabel) : document.createTextNode("—"));
+    if (!job.link) {
+      actions.textContent = "—";
+      actions.classList.add("muted");
+    } else if (job.linkIsExact === false) {
+      actions.appendChild(actionLink(job.link, "Author's posts", "secondary"));
+    } else {
+      actions.appendChild(actionLink(job.link, "Open post", "primary"));
+    }
     if (job.linkIsExact === false) linkTd.title = "Exact post link wasn't available — the post will be near the top of this page.";
     else if (job.authorPostsUrl) {
-      linkTd.append(document.createElement("br"), link(job.authorPostsUrl, "Author's posts"));
+      actions.appendChild(actionLink(job.authorPostsUrl, "Author's posts", "secondary"));
     }
 
     const posted = document.createElement("td");
-    posted.className = "date";
+    posted.className = "date posted";
     if (job.postedAt) {
       posted.dataset.postedAt = job.postedAt;
       posted.textContent = timeAgo(job.postedAt);
       posted.title = new Date(job.postedAt).toLocaleString();
     } else {
       posted.textContent = "—";
-      posted.style.color = "#999";
+      posted.classList.add("muted");
       posted.title = "Post date is only known when the exact post link was captured.";
     }
 
@@ -230,11 +267,11 @@ function renderRows() {
           chrome.storage.local.set({ emailsSent });
         });
       });
-      linkTd.append(btn);
+      actions.append(btn);
     }
 
     const date = document.createElement("td");
-    date.className = "date";
+    date.className = "date scraped";
     const d = new Date(job.scrapedAt);
     date.textContent = isNaN(d) ? job.scrapedAt || "" : d.toLocaleString();
     date.title = job.scrapedAt || "";
@@ -242,24 +279,32 @@ function renderRows() {
     const loc = document.createElement("td");
     loc.className = "location";
     loc.textContent = job.location || "—";
-    if (!job.location) loc.style.color = "#999";
+    if (!job.location) loc.classList.add("muted");
 
     tr.append(num, author, loc, textCell(job.text || ""));
     if (SHOW_MATCHED_SKILLS) {
       const skillsTd = document.createElement("td");
+      skillsTd.className = "skills";
       if (!job.matchedSkills.length) {
         skillsTd.textContent = "—";
-        skillsTd.style.color = "#999";
-      }
-      for (const s of job.matchedSkills) {
-        const chip = document.createElement("span");
-        chip.className = "skill";
-        chip.textContent = s;
-        skillsTd.appendChild(chip);
+        skillsTd.classList.add("muted");
+      } else {
+        const list = document.createElement("div");
+        list.className = "skill-list";
+        for (const s of job.matchedSkills) {
+          const chip = document.createElement("span");
+          chip.className = "skill";
+          chip.textContent = s;
+          list.appendChild(chip);
+        }
+        skillsTd.appendChild(list);
       }
       tr.appendChild(skillsTd);
     }
     tr.append(linkTd, posted, date);
+    [...tr.children].forEach((td, idx) => {
+      if (columns[idx]) td.dataset.label = columns[idx];
+    });
     frag.appendChild(tr);
   });
 

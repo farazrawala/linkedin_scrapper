@@ -3,7 +3,9 @@
  */
 
 const DEFAULT_SKILLS = ["React", "React Native", "Agentic AI", "TypeScript", "PostgreSQL", "MongoDB", "Kafka", "AWS"];
-const FEED_URL_PREFIX = "https://www.linkedin.com/feed";
+/** Pages the scraper works on: the feed and post search results. */
+const SCRAPE_URL_PREFIXES = ["https://www.linkedin.com/feed", "https://www.linkedin.com/search/results/content"];
+const isScrapeUrl = (url) => Boolean(url) && SCRAPE_URL_PREFIXES.some((p) => url.startsWith(p));
 const log = (...args) => console.log("[JobScraper]", ...args);
 
 const els = {
@@ -200,8 +202,8 @@ async function getActiveTab() {
 /** Tell the content script in the active tab to start/stop. */
 async function notifyActiveTab(running) {
   const tab = await getActiveTab();
-  if (!tab || !tab.url || !tab.url.startsWith(FEED_URL_PREFIX)) {
-    if (running) showNote("Open https://www.linkedin.com/feed/ in this tab — scraping runs there.");
+  if (!tab || !isScrapeUrl(tab.url)) {
+    if (running) showNote("Open the LinkedIn feed or a post search in this tab — scraping runs there.");
     return;
   }
   try {
@@ -210,7 +212,7 @@ async function notifyActiveTab(running) {
   } catch (err) {
     // Content script isn't there (e.g. tab opened before the extension was loaded).
     log("Content script not reachable:", err);
-    showNote("Reload the LinkedIn feed tab so the scraper can attach.");
+    showNote("Reload the LinkedIn tab so the scraper can attach.");
   }
 }
 
@@ -312,8 +314,8 @@ document.getElementById("version").textContent = `v${chrome.runtime.getManifest(
   renderScrollInfo();
 
   const tab = await getActiveTab();
-  if (isRunning && (!tab || !tab.url || !tab.url.startsWith(FEED_URL_PREFIX))) {
-    showNote("Running, but this tab isn't the LinkedIn feed.");
+  if (isRunning && (!tab || !isScrapeUrl(tab.url))) {
+    showNote("Running, but this tab isn't the LinkedIn feed or a post search.");
   }
 })();
 
