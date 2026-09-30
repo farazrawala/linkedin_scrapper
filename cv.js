@@ -1,5 +1,5 @@
 /**
- * My LinkedIn Scrapper — CV page: read a PDF CV, extract keywords, save them as skills.
+ * Job Post Finder — CV page: read a PDF CV, extract keywords, save them as skills.
  * The PDF is parsed locally with the bundled pdf.js; nothing leaves the browser.
  */
 import * as pdfjsLib from "./lib/pdfjs/pdf.min.js";

@@ -1,5 +1,5 @@
 /**
- * My LinkedIn Scrapper — helpers shared by content.js, popup.js and table.js.
+ * Job Post Finder — helpers shared by content.js, popup.js and table.js.
  * Load location-dictionary.js before this file.
  */
 
@@ -161,5 +161,51 @@ const JobScraperShared = (() => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  return { matchSkills, extractLocation, postedAt, withMatchedSkills, csvCell, jobsToCsv, sortNewestFirst, downloadCsv };
+  // ---------------------------------------------------------------------------
+  // Search pages run: one post search per skill, a few scrolls each.
+  // ---------------------------------------------------------------------------
+  const SEARCH_SCROLLS_PER_SKILL = 2;
+
+  /** Post search results URL for a keyword, e.g. "react". */
+  function searchUrl(keyword) {
+    return `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent(keyword)}&origin=SWITCH_SEARCH_VERTICAL`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Duplicates: the same post can be saved twice under different IDs (feed vs
+  // search page), and authors repost a series under the same headline.
+  // ---------------------------------------------------------------------------
+  /** Lowercase letters/digits only, single spaces — ignores emoji, punctuation, "…see more". */
+  const normalize = (s) =>
+    String(s || "")
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim();
+
+  /** Headlines shorter than this (e.g. "We're hiring!") are too generic to merge on. */
+  const MIN_HEADLINE_LENGTH = 20;
+
+  /** Keys that mark two jobs as the same post: identical text, or same author + same first line. */
+  function duplicateKeys(job) {
+    const keys = [];
+    const text = normalize(job.text);
+    if (text) keys.push(`text:${text}`);
+    const author = normalize(job.authorUrl || job.author);
+    const headline = normalize(String(job.text || "").split("\n").find((line) => line.trim()));
+    if (author && headline.length >= MIN_HEADLINE_LENGTH) keys.push(`head:${author}|${headline}`);
+    return keys;
+  }
+
+  /** The jobs without duplicates (by ID or content); the first occurrence is kept. */
+  function dedupeJobs(jobs) {
+    const seen = new Set();
+    return jobs.filter((job) => {
+      const keys = [`id:${job.id}`, ...duplicateKeys(job)];
+      if (keys.some((k) => seen.has(k))) return false;
+      keys.forEach((k) => seen.add(k));
+      return true;
+    });
+  }
+
+  return { SEARCH_SCROLLS_PER_SKILL, searchUrl, dedupeJobs, matchSkills, extractLocation, postedAt, withMatchedSkills, csvCell, jobsToCsv, sortNewestFirst, downloadCsv };
 })();

@@ -1,5 +1,5 @@
 /**
- * My LinkedIn Scrapper — "Email" compose dialog on the table page.
+ * Job Post Finder — "Email" compose dialog on the table page.
  *
  *  - writes a cover email for the job post with Groq (post text + CV text from storage)
  *  - lets you edit it, attaches the saved CV PDF
@@ -201,8 +201,8 @@ const JobScraperCompose = (() => {
    */
   async function open(job, email, onSent) {
     current = { job, email, onSent };
-    const data = await chrome.storage.local.get(["smtp", "cv", "cvAttachment"]);
-    settings = JobScraperSmtp.withDefaults(data.smtp);
+    const data = await chrome.storage.local.get(["cv", "cvAttachment"]);
+    settings = await JobScraperSmtp.load();
     cv = data.cv || null;
     attachment = data.cvAttachment && data.cvAttachment.data ? data.cvAttachment : null;
 

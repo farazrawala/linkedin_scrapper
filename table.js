@@ -1,5 +1,5 @@
 /**
- * My LinkedIn Scrapper — full-page table of saved job posts.
+ * Job Post Finder — full-page table of saved job posts.
  */
 
 const TRUNCATE_AT = 200;
@@ -334,7 +334,7 @@ els.exportBtn.addEventListener("click", () => {
 // Live-update while the scraper runs in another tab.
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
-  if (changes.jobPosts) allJobs = changes.jobPosts.newValue || [];
+  if (changes.jobPosts) allJobs = JobScraperShared.dedupeJobs(changes.jobPosts.newValue || []);
   if (changes.skills) {
     skills = changes.skills.newValue || [];
     renderSkillFilter();
@@ -371,7 +371,8 @@ document.getElementById("version").textContent = `v${chrome.runtime.getManifest(
 (async function init() {
   renderHeader();
   const data = await chrome.storage.local.get(["jobPosts", "skills", "emailsSent"]);
-  allJobs = data.jobPosts || [];
+  // Hide duplicates saved by older versions; storage is cleaned on the scraper's next save.
+  allJobs = JobScraperShared.dedupeJobs(data.jobPosts || []);
   emailsSent = data.emailsSent || {};
   skills = data.skills || [];
   renderSkillFilter();

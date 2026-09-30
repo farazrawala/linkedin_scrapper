@@ -1,5 +1,5 @@
 /**
- * My LinkedIn Scrapper — content script (runs on https://www.linkedin.com/feed/* and
+ * Job Post Finder — content script (runs on https://www.linkedin.com/feed/* and
  * the post search results at https://www.linkedin.com/search/results/content/*).
  *
  * While "running":
@@ -137,6 +137,7 @@
   const DEFAULT_SCROLL_LIMIT = 10;
   let scrollLimit = DEFAULT_SCROLL_LIMIT;
   let scrollsLeft = null;
+  let searchRun = null; // { skills, index } during "Start Search Pages"
   let postsOnPage = -1;
   let scrapeTimeoutId = null;
   let mutationTimeoutId = null;
@@ -622,14 +623,12 @@
     return enqueueStorage(async () => {
       if (!extensionAlive()) return;
       const data = await chrome.storage.local.get(["jobPosts", "postsScanned"]);
-      const jobPosts = Array.isArray(data.jobPosts) ? data.jobPosts : [];
-      const existingIds = new Set(jobPosts.map((j) => j.id));
-      for (const job of newJobs) {
-        if (!existingIds.has(job.id)) {
-          jobPosts.push(job);
-          existingIds.add(job.id);
-        }
-      }
+      const saved = Array.isArray(data.jobPosts) ? data.jobPosts : [];
+      // Drops new jobs already saved (same ID, same text, or same author + headline),
+      // and cleans duplicates saved by older versions.
+      const jobPosts = JobScraperShared.dedupeJobs([...saved, ...newJobs]);
+      const skipped = saved.length + newJobs.length - jobPosts.length;
+      if (skipped) log(`Skipped ${skipped} duplicate post(s).`);
       const ids = [...processedIds].slice(-CONFIG.MAX_PROCESSED_IDS);
       await chrome.storage.local.set({
         jobPosts,
@@ -721,9 +720,26 @@
     } catch (err) {
       warn("Final scan failed:", err);
     }
+    if (searchRun) {
+      // Only the search results tab moves the run on; a feed tab open alongside just stops here.
+      if (!location.pathname.startsWith("/search/results/content")) return stop();
+      const index = searchRun.index + 1;
+      if (index < searchRun.skills.length && extensionAlive()) {
+        const keyword = searchRun.skills[index];
+        log(`Done with "${searchRun.skills[searchRun.index]}". Next search: "${keyword}" (${index + 1}/${searchRun.skills.length}).`);
+        searchRun = { ...searchRun, index };
+        scrollsLeft = JobScraperShared.SEARCH_SCROLLS_PER_SKILL;
+        // isRunning stays true, so the next page's init picks the run up.
+        await chrome.storage.local.set({ searchRun, scrollsLeft });
+        stop();
+        location.href = JobScraperShared.searchUrl(keyword);
+        return;
+      }
+      log("Searched every skill.");
+    }
     log("Scroll limit reached. Stopping.");
     stop();
-    if (extensionAlive()) chrome.storage.local.set({ isRunning: false }).catch(() => {});
+    if (extensionAlive()) chrome.storage.local.set({ isRunning: false, searchRun: null }).catch(() => {});
   }
 
   function saveScrollsLeft() {
@@ -786,11 +802,14 @@
     const time = secs >= 60 ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}` : `${secs}s`;
     const left = scrollsLeft == null ? "" : ` · ${scrollsLeft} scroll${scrollsLeft === 1 ? "" : "s"} left`;
     const flashing = Date.now() < flashUntil;
+    const title = searchRun
+      ? `Job Post Finder · "${searchRun.skills[searchRun.index]}" ${searchRun.index + 1}/${searchRun.skills.length}`
+      : "Job Post Finder";
     box.textContent = flashing
-      ? `My LinkedIn Scrapper · ${flashText}`
+      ? `${title} · ${flashText}`
       : nextScrollAt === 0 && scrollsLeft === 0
-        ? `My LinkedIn Scrapper · last scroll done, finishing up${posts}`
-        : `My LinkedIn Scrapper · next scroll in ${time}${left}${posts}`;
+        ? `${title} · last scroll done, finishing up${posts}`
+        : `${title} · next scroll in ${time}${left}${posts}`;
     box.style.background = flashing
       ? "rgba(5, 118, 66, 0.95)"
       : postsOnPage === 0
@@ -886,6 +905,7 @@
     // Read the new count before a Start in the same write (popup sends both together).
     if (changes.scrollLimit) scrollLimit = changes.scrollLimit.newValue || DEFAULT_SCROLL_LIMIT;
     if (changes.scrollsLeft) scrollsLeft = changes.scrollsLeft.newValue ?? null;
+    if (changes.searchRun) searchRun = changes.searchRun.newValue || null;
     if (changes.isRunning) setRunning(Boolean(changes.isRunning.newValue));
     if (changes.skills) skills = changes.skills.newValue || [];
     // New scroll interval: restart the countdown so it applies right away.
@@ -905,8 +925,9 @@
   // ---------------------------------------------------------------------------
   (async function init() {
     try {
-      const data = await chrome.storage.local.get(["isRunning", "processedIds", "skills", "scrollRange", "scrollLimit", "scrollsLeft"]);
+      const data = await chrome.storage.local.get(["isRunning", "processedIds", "skills", "scrollRange", "scrollLimit", "scrollsLeft", "searchRun"]);
       scrollLimit = data.scrollLimit || DEFAULT_SCROLL_LIMIT;
+      searchRun = data.isRunning ? data.searchRun || null : null;
       scrollsLeft = data.scrollsLeft ?? null; // a page reload mid-run carries on with the count
       applyScrollRange(data.scrollRange);
       (data.processedIds || []).forEach((id) => processedIds.add(id));

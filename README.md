@@ -1,4 +1,4 @@
-# My LinkedIn Scrapper (Chrome Extension, Manifest V3)
+# Job Post Finder – for professional networks (Chrome Extension, Manifest V3)
 
 Scans your LinkedIn feed, detects job posts using keywords, and saves them (with links) to a table stored inside the extension. While running, it scrolls to the bottom of the feed after a random delay (default 1–2 minutes, adjustable in the popup) so more posts load. A countdown banner at the top of the feed shows when the next scroll happens.
 
@@ -9,7 +9,7 @@ Job posts are matched against your skills, which are shown in the table and the 
 1. Open `chrome://extensions` in Chrome.
 2. Turn on **Developer mode** (top right).
 3. Click **Load unpacked** and select this folder (the one with `manifest.json`).
-4. Pin **My LinkedIn Scrapper** from the puzzle-piece menu (optional).
+4. Pin **Job Post Finder – for professional networks** from the puzzle-piece menu (optional).
 5. Open (or reload) `https://www.linkedin.com/feed/` while logged in. Post search results (`https://www.linkedin.com/search/results/content/?keywords=…`) work too.
 
 > If the feed tab was already open before you loaded or reloaded the extension, reload the tab so the content script attaches.
@@ -85,3 +85,10 @@ Like skills, it is worked out when the table loads, so posts saved earlier get a
 - The table and CSV export always use your **current** skills, so posts saved earlier update when you add or remove a skill.
 - The table has a **Matched Skills** column and a filter: All posts / Any skill matched / one specific skill.
 - `isJobPost(text)` and `matchSkills(text, skills)` in `content.js` are both `async`, so either can be swapped for an AI API call later.
+
+## Privacy
+
+The privacy policy is bundled as `privacy.html` (linked at the bottom of the popup) and published online at
+https://farazrawala.github.io/job-post-finder-privacy/ — use this URL in the Chrome Web Store listing.
+
+In short: all data stays in the browser's extension storage. Data is sent out only when you use AI email drafts (to Groq, with your own API key) or send an email (to the mail relay set in Email settings, localhost by default). No analytics, tracking or developer server.

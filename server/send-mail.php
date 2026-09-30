@@ -1,6 +1,6 @@
 <?php
 /**
- * My LinkedIn Scrapper — local mail relay.
+ * Job Post Finder — local mail relay.
  *
  * Chrome extensions can't speak SMTP, so the table page POSTs the email here
  * (running on XAMPP) and this script sends it with PHPMailer.

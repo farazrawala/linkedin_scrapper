@@ -1,5 +1,5 @@
 /**
- * My LinkedIn Scrapper — known skills looked for in an uploaded CV.
+ * Job Post Finder — known skills looked for in an uploaded CV.
  *
  * Each entry: canonical name, plus optional aliases that also count as a match.
  * Matching is whole-word and case-insensitive, except entries marked

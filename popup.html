@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>My LinkedIn Scrapper</title>
+  <title>Job Post Finder – for professional networks</title>
+  <link rel="icon" type="image/png" href="icons/icon32.png">
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
   <header>
-    <h1>My LinkedIn Scrapper <span id="version" class="version"></span></h1>
+    <h1>Job Post Finder <span id="version" class="version"></span></h1>
     <span id="statusBadge" class="badge">Stopped</span>
   </header>
   <p id="scrollInfo" class="scroll-info" hidden></p>
@@ -75,6 +76,7 @@
 
   <section>
     <button id="toggleBtn" class="btn primary">Start</button>
+    <button id="searchBtn" class="btn search-btn" title="Open a post search for each skill, scroll it 2 times, then move to the next skill">Start Search Pages</button>
     <p id="tabNote" class="hint warn" hidden></p>
   </section>
 
@@ -88,6 +90,10 @@
     <button id="exportBtn" class="btn">Export CSV</button>
     <button id="clearBtn" class="btn danger">Clear Data</button>
   </section>
+
+  <footer class="popup-footer">
+    <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>
+  </footer>
 
   <script src="location-dictionary.js"></script>
   <script src="shared.js"></script>

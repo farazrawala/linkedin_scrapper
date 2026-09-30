@@ -1,5 +1,5 @@
 /**
- * My LinkedIn Scrapper — background service worker.
+ * Job Post Finder — background service worker.
  * Opens the saved-jobs table in a new tab and seeds default settings on install.
  */
 

@@ -1,5 +1,5 @@
 /**
- * My LinkedIn Scrapper — popup: skills, start/stop, counters, table/export/clear.
+ * Job Post Finder — popup: skills, start/stop, counters, table/export/clear.
  */
 
 const DEFAULT_SKILLS = ["React", "React Native", "Agentic AI", "TypeScript", "PostgreSQL", "MongoDB", "Kafka", "AWS"];
@@ -21,10 +21,12 @@ const els = {
   exportBtn: document.getElementById("exportBtn"),
   clearBtn: document.getElementById("clearBtn"),
   cvBtn: document.getElementById("cvBtn"),
+  searchBtn: document.getElementById("searchBtn"),
 };
 
 let skills = [];
 let isRunning = false;
+let searchRun = null; // { skills, index } while "Start Search Pages" is running
 let scrollStatus = { nextScrollAt: 0, postsOnPage: -1 }; // written by content.js
 
 // ---------------------------------------------------------------------------
@@ -167,6 +169,7 @@ function renderRunning() {
   els.toggleBtn.classList.toggle("stop", isRunning);
   els.statusBadge.textContent = isRunning ? "Running" : "Stopped";
   els.statusBadge.classList.toggle("running", isRunning);
+  els.searchBtn.disabled = isRunning;
   renderScrollLimit();
 }
 
@@ -180,6 +183,7 @@ function renderScrollInfo() {
   const secs = Math.max(0, Math.ceil((nextScrollAt - Date.now()) / 1000));
   const time = secs >= 60 ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}` : `${secs}s`;
   let text = `Next scroll in ${time}`;
+  if (searchRun) text = `Search "${searchRun.skills[searchRun.index]}" (${searchRun.index + 1}/${searchRun.skills.length}) · ${text}`;
   if (scrollsLeft != null) text += ` · ${scrollsLeft} scroll${scrollsLeft === 1 ? "" : "s"} left`;
   if (postsOnPage >= 0) text += ` · ${postsOnPage} post${postsOnPage === 1 ? "" : "s"} on page`;
   if (postsOnPage === 0) text += " (selectors may need updating)";
@@ -223,8 +227,36 @@ els.toggleBtn.addEventListener("click", async () => {
   renderRunning();
   // Storage is the source of truth; content scripts also listen for this change.
   // Both keys go in one write so content.js sees the new count when it starts.
-  await chrome.storage.local.set(isRunning ? { isRunning, scrollsLeft } : { isRunning });
+  // Stop also ends a search pages run; plain Start never continues one.
+  searchRun = null;
+  await chrome.storage.local.set(isRunning ? { isRunning, scrollsLeft, searchRun } : { isRunning, searchRun });
   await notifyActiveTab(isRunning);
+});
+
+// Start Search Pages: open the post search for each skill in turn in this tab,
+// scroll it SEARCH_SCROLLS_PER_SKILL times, then content.js moves to the next skill.
+els.searchBtn.addEventListener("click", async () => {
+  if (isRunning) return;
+  if (!skills.length) {
+    showNote("Add at least one skill first.");
+    return;
+  }
+  // Random order every run (Fisher–Yates), each skill still searched once.
+  const order = [...skills];
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  searchRun = { skills: order, index: 0 };
+  isRunning = true;
+  scrollsLeft = JobScraperShared.SEARCH_SCROLLS_PER_SKILL;
+  renderRunning();
+  await chrome.storage.local.set({ searchRun, isRunning, scrollsLeft });
+  const url = JobScraperShared.searchUrl(searchRun.skills[0]);
+  const tab = await getActiveTab();
+  if (tab) await chrome.tabs.update(tab.id, { url });
+  else await chrome.tabs.create({ url });
+  showNote("");
 });
 
 // ---------------------------------------------------------------------------
@@ -243,6 +275,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     els.savedCount.textContent = Array.isArray(list) ? list.length : 0;
   }
   if (changes.scrollsLeft) scrollsLeft = changes.scrollsLeft.newValue ?? null;
+  if (changes.searchRun) searchRun = changes.searchRun.newValue || null;
   if (changes.scrollLimit) scrollLimit = changes.scrollLimit.newValue || DEFAULT_SCROLL_LIMIT;
   if (changes.isRunning) {
     isRunning = Boolean(changes.isRunning.newValue);
@@ -293,7 +326,7 @@ els.clearBtn.addEventListener("click", async () => {
 document.getElementById("version").textContent = `v${chrome.runtime.getManifest().version}`;
 
 (async function init() {
-  const data = await chrome.storage.local.get(["skills", "skillsCollapsed", "scrollRange", "scrollLimit", "scrollsLeft", "isRunning", "postsScanned", "jobPosts", "scrollStatus"]);
+  const data = await chrome.storage.local.get(["skills", "skillsCollapsed", "scrollRange", "scrollLimit", "scrollsLeft", "isRunning", "postsScanned", "jobPosts", "scrollStatus", "searchRun"]);
   // Use defaults only when nothing has ever been saved.
   if (Array.isArray(data.skills)) {
     skills = data.skills;
@@ -304,6 +337,7 @@ document.getElementById("version").textContent = `v${chrome.runtime.getManifest(
   isRunning = Boolean(data.isRunning);
   scrollLimit = data.scrollLimit || DEFAULT_SCROLL_LIMIT;
   scrollsLeft = data.scrollsLeft ?? null;
+  searchRun = isRunning ? data.searchRun || null : null;
 
   setSkillsCollapsed(Boolean(data.skillsCollapsed));
   renderScrollRange(data.scrollRange || DEFAULT_SCROLL_RANGE);

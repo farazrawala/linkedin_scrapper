@@ -136,6 +136,8 @@ section { margin-bottom: 14px; }
 .btn.primary { width: 100%; background: #0a66c2; color: #fff; }
 .btn.primary:hover { background: #004182; }
 .btn.primary.stop { background: #b24020; border-color: #b24020; }
+.btn.search-btn { width: 100%; margin-top: 8px; }
+.btn:disabled { opacity: 0.5; cursor: default; background: #fff; }
 .btn.danger { border-color: #b24020; color: #b24020; }
 .btn.small { margin-top: 8px; padding: 5px 10px; font-size: 12px; }
 .btn.danger:hover { background: #fcefeb; }
@@ -156,6 +158,10 @@ section { margin-bottom: 14px; }
 
 .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0; }
 .actions .btn { flex: 1; padding: 6px 8px; font-size: 12px; }
+
+.popup-footer { margin-top: 12px; text-align: center; font-size: 11px; }
+.popup-footer a { color: #666; }
+.popup-footer a:hover { color: #0a66c2; }
 
 /* SMTP settings */
 #smtpBody[hidden] { display: none; }

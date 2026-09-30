@@ -1,5 +1,5 @@
 /**
- * My LinkedIn Scrapper — keyword extraction from CV text.
+ * Job Post Finder — keyword extraction from CV text.
  * Pure functions (no DOM, no chrome.*), used by cv.js.
  *
  * Two sources of keywords:

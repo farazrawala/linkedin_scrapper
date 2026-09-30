@@ -1,5 +1,5 @@
 /**
- * My LinkedIn Scrapper — place names looked for in job posts (used by shared.js).
+ * Job Post Finder — place names looked for in job posts (used by shared.js).
  *
  * Matched case-sensitively as whole words, so "Nice" or "Reading" in normal
  * sentences don't count unless listed here. Add your own entries freely.
