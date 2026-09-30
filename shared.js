@@ -123,7 +123,7 @@ const JobScraperShared = (() => {
 
   /** Build CSV text from job post objects. */
   function jobsToCsv(jobs) {
-    const header = ["#", "Author", "Author URL", "Location", "Post Text", "Link", "Posted At", "Scraped At", "Matched Skills"];
+    const header = ["#", "Author", "Author URL", "Location", "Post Text", "Link", "Comments", "Posted At", "Scraped At", "Matched Skills"];
     const rows = jobs.map((job, i) => [
       i + 1,
       job.author,
@@ -131,6 +131,7 @@ const JobScraperShared = (() => {
       job.location || "",
       job.text,
       job.link,
+      typeof job.commentCount === "number" ? job.commentCount : "",
       job.postedAt || postedAt(job),
       job.scrapedAt,
       (job.matchedSkills || []).join("; "),

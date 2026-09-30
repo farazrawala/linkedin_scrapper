@@ -50,6 +50,10 @@
         "button.see-more",
         'button[aria-label*="see more" i]',
       ],
+      // Elements that may hold the comment count, e.g. <span>12 comments</span> (2026 feed) or a
+      // button labelled "12 comments on Adeel Mirza's post" (older markup). Matched by text,
+      // since the 2026 feed's class names are hashed.
+      COMMENT_COUNT: ["span", "button", "a"],
       // Post key inside the componentkey attribute (2026 feed).
       POST_KEY_ATTRIBUTE: "componentkey",
       POST_KEY_PATTERN: /^update-card-focus(.+?)FeedType/,
@@ -129,6 +133,8 @@
   // State
   // ---------------------------------------------------------------------------
   const processedIds = new Set();
+  const savedJobIds = new Set(); // ids of saved job posts, to refresh their comment counts
+  const commentUpdates = new Map(); // saved job id -> comment count seen on the page, not yet stored
   let isRunning = false;
   let scrollTimeoutId = null;
   let countdownIntervalId = null;
@@ -456,6 +462,29 @@
       .trim();
   }
 
+  // "12 comments", "1 comment", "1,234 comments", "1.2K comments"
+  const COMMENT_TEXT_RE = /^([\d.,]+)\s*([KkMm])?\s+comments?$/;
+  const COMMENT_LABEL_RE = /^([\d.,]+)\s*([KkMm])?\s+comments?\b/;
+
+  function parseCount(digits, suffix) {
+    const scale = !suffix ? 1 : /k/i.test(suffix) ? 1e3 : 1e6;
+    // "1,234" → 1234; "1.2" with a K/M suffix → 1.2
+    const n = Number(suffix ? digits.replace(",", ".") : digits.replace(/[.,]/g, ""));
+    return Number.isFinite(n) ? Math.round(n * scale) : null;
+  }
+
+  /**
+   * Number of comments shown under the post, or null if the post shows none
+   * (LinkedIn hides the count when there are no comments).
+   */
+  function getCommentCount(postEl) {
+    for (const el of postEl.querySelectorAll(CONFIG.SELECTORS.COMMENT_COUNT.join(","))) {
+      const m = collapseWhitespace(el.textContent).match(COMMENT_TEXT_RE) || collapseWhitespace(el.getAttribute("aria-label") || "").match(COMMENT_LABEL_RE);
+      if (m) return parseCount(m[1], m[2]);
+    }
+    return null;
+  }
+
   /** Stable per-post key from the 2026 feed's componentkey attribute. */
   function getPostKey(postEl) {
     const v = postEl.getAttribute(CONFIG.SELECTORS.POST_KEY_ATTRIBUTE) || "";
@@ -516,7 +545,11 @@
     const urn = getUrn(postEl);
     // Prefer the URN, then the feed's componentkey; hash the text as a last resort.
     const earlyId = urn || getPostKey(postEl);
-    if (earlyId && processedIds.has(earlyId)) return undefined;
+    if (earlyId && processedIds.has(earlyId)) {
+      // Already scanned: if it is a saved job post, note its current comment count.
+      if (savedJobIds.has(earlyId)) commentUpdates.set(earlyId, getCommentCount(postEl) ?? 0);
+      return undefined;
+    }
 
     await expandSeeMore(postEl);
     const text = getPostText(postEl);
@@ -560,6 +593,8 @@
       linkIsExact: Boolean(postUrl),
       authorPostsUrl: authorPostsUrl(authorUrl),
       location: JobScraperShared.extractLocation(text),
+      // LinkedIn shows no count when a post has no comments.
+      commentCount: getCommentCount(postEl) ?? 0,
       scrapedAt: new Date().toISOString(),
       matchedSkills: [],
     };
@@ -603,10 +638,8 @@
         }
       }
 
-      if (scanned > 0) {
-        log(`Scanned ${scanned} new post(s), ${newJobs.length} job post(s).`);
-        await saveResults(newJobs, scanned);
-      }
+      if (scanned > 0) log(`Scanned ${scanned} new post(s), ${newJobs.length} job post(s).`);
+      if (scanned > 0 || commentUpdates.size) await saveResults(newJobs, scanned);
     } catch (err) {
       warn("Scan failed:", err);
     } finally {
@@ -618,12 +651,22 @@
     }
   }
 
-  /** Persist new jobs (no duplicates), processed IDs and the scanned counter. */
+  /** Persist new jobs (no duplicates), processed IDs, the scanned counter and updated comment counts. */
   function saveResults(newJobs, scannedDelta) {
+    const updates = new Map(commentUpdates);
+    commentUpdates.clear();
     return enqueueStorage(async () => {
       if (!extensionAlive()) return;
       const data = await chrome.storage.local.get(["jobPosts", "postsScanned"]);
-      const saved = Array.isArray(data.jobPosts) ? data.jobPosts : [];
+      let changed = 0;
+      const saved = (Array.isArray(data.jobPosts) ? data.jobPosts : []).map((job) => {
+        const count = updates.get(job.id);
+        if (count === undefined || count === job.commentCount) return job;
+        changed++;
+        return { ...job, commentCount: count };
+      });
+      if (!newJobs.length && !scannedDelta && !changed) return;
+      if (changed) log(`Updated the comment count of ${changed} saved post(s).`);
       // Drops new jobs already saved (same ID, same text, or same author + headline),
       // and cleans duplicates saved by older versions.
       const jobPosts = JobScraperShared.dedupeJobs([...saved, ...newJobs]);
@@ -899,6 +942,11 @@
     }
   });
 
+  function setSavedJobIds(jobPosts) {
+    savedJobIds.clear();
+    for (const job of Array.isArray(jobPosts) ? jobPosts : []) if (job && job.id) savedJobIds.add(job.id);
+  }
+
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
     // Keeps multiple feed tabs in sync with the popup's toggle.
@@ -908,6 +956,7 @@
     if (changes.searchRun) searchRun = changes.searchRun.newValue || null;
     if (changes.isRunning) setRunning(Boolean(changes.isRunning.newValue));
     if (changes.skills) skills = changes.skills.newValue || [];
+    if (changes.jobPosts) setSavedJobIds(changes.jobPosts.newValue);
     // New scroll interval: restart the countdown so it applies right away.
     if (changes.scrollRange && applyScrollRange(changes.scrollRange.newValue) && isRunning) scheduleNextScroll();
     // "Clear Data" in the popup wipes processed IDs — forget them in memory too.
@@ -925,7 +974,8 @@
   // ---------------------------------------------------------------------------
   (async function init() {
     try {
-      const data = await chrome.storage.local.get(["isRunning", "processedIds", "skills", "scrollRange", "scrollLimit", "scrollsLeft", "searchRun"]);
+      const data = await chrome.storage.local.get(["isRunning", "processedIds", "skills", "scrollRange", "scrollLimit", "scrollsLeft", "searchRun", "jobPosts"]);
+      setSavedJobIds(data.jobPosts);
       scrollLimit = data.scrollLimit || DEFAULT_SCROLL_LIMIT;
       searchRun = data.isRunning ? data.searchRun || null : null;
       scrollsLeft = data.scrollsLeft ?? null; // a page reload mid-run carries on with the count

@@ -258,6 +258,17 @@
     td.date.posted { width: 130px; color: var(--text-2); font-weight: 500; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E"); }
     td.date.scraped { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M16 3v4M8 3v4M3 11h18'/%3E%3C/svg%3E"); }
     td.date.muted { color: var(--faint); font-weight: 400; }
+    td.comments {
+      width: 110px;
+      padding-left: 34px;
+      color: var(--text-2);
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      background: no-repeat 14px 15px / 14px 14px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-5A8 8 0 1 1 21 12z'/%3E%3C/svg%3E");
+    }
+    td.comments.muted { color: var(--faint); font-weight: 400; }
 
     /* Email buttons in the link column */
     a.email-btn, button.email-btn {
@@ -411,6 +422,7 @@
       td.num::before, td.author::before, td.text::before { display: none; }
       td.author { padding-right: 40px; font-size: 15px; }
       td.date, td.date.posted, td.date.scraped { display: inline-block; width: 50%; padding: 6px 0; background-image: none; vertical-align: top; }
+      td.comments { width: auto; padding: 6px 0; background-image: none; }
       .link-actions { flex-direction: row; flex-wrap: wrap; gap: 8px 16px; }
       #empty { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
     }
@@ -451,6 +463,7 @@
         <option value="scraped-asc">Oldest scraped</option>
         <option value="posted-desc">Newest posted</option>
         <option value="posted-asc">Oldest posted</option>
+        <option value="comments-desc">Most comments</option>
         <option value="author-asc">Author A–Z</option>
       </select>
     </div>

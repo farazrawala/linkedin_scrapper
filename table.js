@@ -23,10 +23,14 @@ try {
   if (saved && [...els.sortBy.options].some((o) => o.value === saved)) els.sortBy.value = saved;
 } catch {}
 
-/** Sorted copy of the jobs for the chosen sort. Posts without a post date go last. */
+/** Sorted copy of the jobs for the chosen sort. Posts without a post date (or comment count) go last. */
 function sortJobs(jobs, sortBy) {
   const [field, dir] = sortBy.split("-");
   const sign = dir === "asc" ? 1 : -1;
+  if (field === "comments") {
+    const has = (j) => typeof j.commentCount === "number";
+    return [...jobs].sort((a, b) => (has(a) !== has(b) ? (has(a) ? -1 : 1) : sign * ((a.commentCount || 0) - (b.commentCount || 0))));
+  }
   const key = (j) =>
     field === "posted" ? j.postedAt || "" : field === "author" ? (j.author || "").toLowerCase() : String(j.scrapedAt || "");
   return [...jobs].sort((a, b) => {
@@ -67,7 +71,7 @@ function renderSkillFilter() {
 let columns = [];
 
 function renderHeader() {
-  const cols = ["#", "Author", "Location", "Post Text", "Link", "Posted At", "Scraped At"];
+  const cols = ["#", "Author", "Location", "Post Text", "Link", "Comments", "Posted At", "Scraped At"];
   if (SHOW_MATCHED_SKILLS) cols.splice(4, 0, "Matched Skills");
   columns = cols;
   const tr = document.createElement("tr");
@@ -270,6 +274,18 @@ function renderRows() {
       actions.append(btn);
     }
 
+    const comments = document.createElement("td");
+    comments.className = "comments";
+    if (typeof job.commentCount === "number") {
+      comments.textContent = job.commentCount.toLocaleString();
+      comments.title = `${job.commentCount.toLocaleString()} comment${job.commentCount === 1 ? "" : "s"} when last seen in the feed`;
+      if (job.commentCount === 0) comments.classList.add("muted");
+    } else {
+      comments.textContent = "—";
+      comments.classList.add("muted");
+      comments.title = "Saved before comment counts were recorded. It fills in when the post shows up in the feed again.";
+    }
+
     const date = document.createElement("td");
     date.className = "date scraped";
     const d = new Date(job.scrapedAt);
@@ -301,7 +317,7 @@ function renderRows() {
       }
       tr.appendChild(skillsTd);
     }
-    tr.append(linkTd, posted, date);
+    tr.append(linkTd, comments, posted, date);
     [...tr.children].forEach((td, idx) => {
       if (columns[idx]) td.dataset.label = columns[idx];
     });

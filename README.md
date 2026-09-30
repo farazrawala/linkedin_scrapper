@@ -47,7 +47,7 @@ Keep the feed tab open (it can be in the background, but Chrome may slow down ti
 |---|---|---|
 | `skills` | `string[]` | Chip input values |
 | `isRunning` | `boolean` | Start/Stop state, shared by the popup and all feed tabs |
-| `jobPosts` | `object[]` | `{ id, author, authorUrl, text, link, linkIsExact, scrapedAt, matchedSkills: [] }`, no duplicate IDs. `linkIsExact: false` means LinkedIn did not expose the post URL, so `link` is the author's recent-posts page |
+| `jobPosts` | `object[]` | `{ id, author, authorUrl, text, link, linkIsExact, commentCount, scrapedAt, matchedSkills: [] }`, no duplicate IDs. `commentCount` is the number shown under the post, refreshed whenever the post shows up in the feed again (missing on posts saved before v1.12). `linkIsExact: false` means LinkedIn did not expose the post URL, so `link` is the author's recent-posts page |
 | `processedIds` | `string[]` | Post URNs already scanned (keeps the last 5000) |
 | `postsScanned` | `number` | Counter |
 
