@@ -2,6 +2,8 @@
  * Job Post Finder — popup: skills, start/stop, counters, table/export/clear.
  */
 
+
+
 const DEFAULT_SKILLS = ["React", "React Native", "Agentic AI", "TypeScript", "PostgreSQL", "MongoDB", "Kafka", "AWS"];
 /** Pages the scraper works on: the feed and post search results. */
 const SCRAPE_URL_PREFIXES = ["https://www.linkedin.com/feed", "https://www.linkedin.com/search/results/content"];
